@@ -21,11 +21,19 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // await client.connect();
+    const usersCollection = client.db("nexParcel").collection("users");
 
-    // const exampleCollections = client.db('DBname').collection('dataName')
-
-    // APIs here
+    // USER RELATED APIS
+    app.post("/users", async (req, res) => {
+      const users = req.body;
+      const filter = { email: users?.email };
+      const exist = await usersCollection.findOne(filter);
+      console.log(exist);
+      if (exist) return res.send({ message: "Already exist" });
+      const options = { upsert: true };
+      const result = await usersCollection.insertOne(users, options);
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
