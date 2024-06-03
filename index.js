@@ -50,6 +50,27 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await bookingsCollection.findOne(filter);
+      res.send(result);
+    });
+
+    // UPDATE A BOOKING
+    app.patch("/bookings/:id", async (req, res) => {
+      const updateData = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          ...updateData,
+        },
+      };
+      const result = await bookingsCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     // Delete a booking
     app.delete("/bookings/:id", async (req, res) => {
       const id = req.params.id;
