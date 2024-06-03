@@ -42,7 +42,13 @@ async function run() {
       res.send(result);
     });
 
-    // Post a booking
+    // GET ALL BOOKING PARCEL FOR ADMIN
+    app.get("/bookings", async (req, res) => {
+      const result = await bookingsCollection.find().toArray();
+      res.send(result);
+    });
+
+    // POST A BOOKING
     app.post("/bookings", async (req, res) => {
       const bookingData = req.body;
       console.log(bookingData);
