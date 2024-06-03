@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -41,10 +41,20 @@ async function run() {
       const result = await bookingsCollection.find({ email }).toArray();
       res.send(result);
     });
+
+    // Post a booking
     app.post("/bookings", async (req, res) => {
       const bookingData = req.body;
       console.log(bookingData);
       const result = await bookingsCollection.insertOne(bookingData);
+      res.send(result);
+    });
+
+    // Delete a booking
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(filter);
       res.send(result);
     });
 
