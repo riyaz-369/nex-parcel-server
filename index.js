@@ -22,16 +22,29 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const usersCollection = client.db("nexParcel").collection("users");
+    const bookingsCollection = client.db("nexParcel").collection("bookings");
 
     // USER RELATED APIS
     app.post("/users", async (req, res) => {
       const users = req.body;
       const filter = { email: users?.email };
       const exist = await usersCollection.findOne(filter);
-      console.log(exist);
       if (exist) return res.send({ message: "Already exist" });
       const options = { upsert: true };
       const result = await usersCollection.insertOne(users, options);
+      res.send(result);
+    });
+
+    // PARCEL BOOKING RELATED APIS
+    app.get("/bookings/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await bookingsCollection.find({ email }).toArray();
+      res.send(result);
+    });
+    app.post("/bookings", async (req, res) => {
+      const bookingData = req.body;
+      console.log(bookingData);
+      const result = await bookingsCollection.insertOne(bookingData);
       res.send(result);
     });
 
