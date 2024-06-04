@@ -41,6 +41,13 @@ async function run() {
       res.send(result);
     });
 
+    // GET A USER
+    app.get("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.findOne({ email });
+      res.send(result);
+    });
+
     // GET ALL DELIVERY MEN FROM USERS COLLECTION
     app.get("/deliverymen", async (req, res) => {
       const filter = { role: "Delivery Men" };
@@ -91,16 +98,19 @@ async function run() {
     });
 
     // UPDATE A BOOKING
-    app.patch("/bookings/:id", async (req, res) => {
+    app.put("/bookings/:id", async (req, res) => {
       const updateData = req.body;
       const id = req.params.id;
+      console.log(id);
       const filter = { _id: new ObjectId(id) };
+      console.log(filter);
       const updateDoc = {
         $set: {
           ...updateData,
         },
       };
       const result = await bookingsCollection.updateOne(filter, updateDoc);
+      console.log(result);
       res.send(result);
     });
 
@@ -110,6 +120,16 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const result = await bookingsCollection.deleteOne(filter);
       res.send(result);
+    });
+
+    // GET ALL MY DELIVERY LIST
+    app.get("/delivery-lists/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const myDeliveries = await bookingsCollection
+        .find({ deliverymen_id: id })
+        .toArray();
+      res.send(myDeliveries);
     });
 
     await client.db("admin").command({ ping: 1 });
