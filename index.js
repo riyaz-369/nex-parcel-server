@@ -35,6 +35,12 @@ async function run() {
       res.send(result);
     });
 
+    // GET ALL USERS
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
     // PARCEL BOOKING RELATED APIS
     app.get("/bookings/:email", async (req, res) => {
       const email = req.params.email;
