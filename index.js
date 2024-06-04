@@ -41,6 +41,13 @@ async function run() {
       res.send(result);
     });
 
+    // GET ALL DELIVERY MEN FROM USERS COLLECTION
+    app.get("/deliverymen", async (req, res) => {
+      const filter = { role: "Delivery Men" };
+      const result = await usersCollection.find(filter).toArray();
+      res.send(result);
+    });
+
     // MAKE DELIVERYMEN A USER
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
