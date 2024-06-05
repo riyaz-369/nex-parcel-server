@@ -37,8 +37,8 @@ async function run() {
 
     // GET ALL USERS
     app.get("/users", async (req, res) => {
-      const result = await usersCollection.find().toArray();
-      res.send(result);
+      const users = await usersCollection.find().toArray();
+      res.send(users);
     });
 
     // GET A USER
@@ -78,8 +78,26 @@ async function run() {
 
     // GET ALL BOOKING PARCEL FOR ADMIN
     app.get("/bookings", async (req, res) => {
-      const result = await bookingsCollection.find().toArray();
-      res.send(result);
+      const bookings = await bookingsCollection.find().toArray();
+      res.send(bookings);
+    });
+
+    // GET BOOKING STATISTICS
+    app.get("/stats", async (req, res) => {
+      const count = await bookingsCollection.estimatedDocumentCount();
+      const parcelStatus = await bookingsCollection
+        .find(
+          { status: "delivered" },
+          {
+            projection: {
+              _id: 0,
+              status: 1,
+            },
+          }
+        )
+        .toArray();
+      const users = await usersCollection.estimatedDocumentCount();
+      res.send({ count, parcelStatus, users });
     });
 
     // POST A BOOKING
@@ -102,6 +120,7 @@ async function run() {
       const updateData = req.body;
       const id = req.params.id;
       console.log(id);
+      console.log(updateData);
       const filter = { _id: new ObjectId(id) };
       console.log(filter);
       const updateDoc = {
@@ -125,7 +144,6 @@ async function run() {
     // GET ALL MY DELIVERY LIST
     app.get("/delivery-lists/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const myDeliveries = await bookingsCollection
         .find({ deliverymen_id: id })
         .toArray();
