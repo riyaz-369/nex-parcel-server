@@ -47,8 +47,17 @@ async function run() {
 
     // GET ALL USERS
     app.get("/users", async (req, res) => {
-      const users = await usersCollection.find().toArray();
-      res.send(users);
+      const { page, size } = req.query;
+      const pageNum = parseInt(page);
+      const dataSize = parseInt(size);
+
+      const count = await usersCollection.countDocuments();
+      const users = await usersCollection
+        .find()
+        .skip((pageNum - 1) * dataSize)
+        .limit(dataSize)
+        .toArray();
+      res.send({ users, count });
     });
 
     // GET A USER
@@ -129,24 +138,6 @@ async function run() {
       res.send(bookings);
     });
 
-    // GET BOOKING STATISTICS
-    app.get("/stats", async (req, res) => {
-      const count = await bookingsCollection.estimatedDocumentCount();
-      const parcelStatus = await bookingsCollection
-        .find(
-          { status: "delivered" },
-          {
-            projection: {
-              _id: 0,
-              status: 1,
-            },
-          }
-        )
-        .toArray();
-      const users = await usersCollection.estimatedDocumentCount();
-      res.send({ count, parcelStatus, users });
-    });
-
     // POST A BOOKING
     app.post("/bookings", async (req, res) => {
       const bookingData = req.body;
@@ -161,18 +152,32 @@ async function run() {
       res.send(result);
     });
 
-    // // GET BOOKING BY STATUS
-    // app.get("/filter-by-status", async (req, res) => {
-    //   const filter = req.query.filter;
-    //   let query = {};
-    //   if (filter) {
-    //     query = { status: filter };
-    //   }
-    //   console.log(query);
-    //   const result = await bookingsCollection.find(query).toArray();
-    //   console.log(result);
-    //   res.send(result);
-    // });
+    //  STATISTICS
+    app.get("/statistics", async (req, res) => {
+      const bookedParcel = await bookingsCollection.estimatedDocumentCount();
+      const parcelDelivered = await bookingsCollection
+        .find({ status: "delivered" }, { projection: { status: 1, _id: 0 } })
+        .toArray();
+      const users = await usersCollection.estimatedDocumentCount();
+      const bookings = await bookingsCollection.find().toArray();
+
+      const bookingsByDate = bookings.reduce((acc, booking) => {
+        const date = new Date(booking.booking_date).toLocaleDateString();
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+      }, {});
+
+      const barChartData = Object.keys(bookingsByDate);
+      const barChartSeriesData = Object.values(bookingsByDate);
+
+      res.send({
+        bookedParcel,
+        parcelDelivered,
+        users,
+        barChartData,
+        barChartSeriesData,
+      });
+    });
 
     // UPDATE A BOOKING
     app.put("/bookings/:id", async (req, res) => {
