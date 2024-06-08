@@ -4,6 +4,7 @@ require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // middleware
 app.use(
@@ -35,6 +36,20 @@ async function run() {
     const usersCollection = database.collection("users");
     const bookingsCollection = database.collection("bookings");
     const reviewsCollection = database.collection("reviews");
+
+    // PAYMENT API
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseFloat(price * 100);
+
+      const paymentIntents = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({ clientSecret: paymentIntents.client_secret });
+    });
 
     // USER RELATED APIS
     app.post("/users", async (req, res) => {
