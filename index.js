@@ -34,13 +34,14 @@ async function run() {
 
     const usersCollection = database.collection("users");
     const bookingsCollection = database.collection("bookings");
+    const reviewsCollection = database.collection("reviews");
 
     // USER RELATED APIS
     app.post("/users", async (req, res) => {
       const users = req.body;
       const filter = { email: users?.email };
       const exist = await usersCollection.findOne(filter);
-      if (exist) return res.send({ message: "Already exist" });
+      if (exist) return res.send({ message: "This email already in used." });
       const result = await usersCollection.insertOne(users);
       res.send(result);
     });
@@ -213,6 +214,13 @@ async function run() {
         .find({ deliverymen_id: id })
         .toArray();
       res.send(myDeliveries);
+    });
+
+    // POST USERS REVIEW
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      const result = await reviewsCollection.insertOne(review);
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
