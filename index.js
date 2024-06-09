@@ -41,7 +41,7 @@ async function run() {
     // JWT APIS
     app.post("/jwt", async (req, res) => {
       const user = req.body;
-      console.log(user);
+      console.log("client side user", user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
@@ -50,8 +50,10 @@ async function run() {
 
     // VERIFY TOKEN MIDDLEWARES
     const verifyToken = (req, res, next) => {
+      console.log("req headers", req.headers);
+
       const token = req.headers.authorization;
-      console.log("Inside verify", token);
+      console.log("Inside verify the token", token);
 
       if (!token)
         return res.status(401).send({ message: "unauthorized access" });
@@ -97,7 +99,7 @@ async function run() {
     });
 
     // GET ALL USERS
-    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
       const { page, size } = req.query;
       const pageNum = parseInt(page);
       const dataSize = parseInt(size);
@@ -112,7 +114,7 @@ async function run() {
     });
 
     // GET A USER
-    app.get("/user/:email", verifyToken, async (req, res) => {
+    app.get("/user/:email", async (req, res) => {
       const email = req.params.email;
       const user = await usersCollection.findOne({ email });
       res.send(user);
@@ -121,27 +123,69 @@ async function run() {
     // GET ALL DELIVERY MEN FROM USERS COLLECTION
     app.get("/deliverymen", async (req, res) => {
       const filter = { role: "Delivery Men" };
-      const result = await usersCollection.find(filter).toArray();
+      const result = await usersCollection
+        .find(filter)
+        .sort({
+          no_of_delivered_parcel: -1,
+          rating: -1,
+        })
+        .toArray();
+      res.send(result);
+    });
+
+    // COUNT USER NUMBER OF BOOKED PARCEL
+    app.put("/users/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      // console.log(email);
+      const options = { upsert: true };
+      const updateDoc = {
+        $inc: { number_of_parcel_booked: 1 },
+      };
+      const result = await usersCollection.updateOne(
+        { email },
+        updateDoc,
+        options
+      );
       res.send(result);
     });
 
     // MAKE A USER DELIVERYMEN OR ADMIN
-    app.patch("/users/:email", verifyToken, verifyAdmin, async (req, res) => {
+    app.patch("/users/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log(email);
+      // console.log(email);
       const userInfo = req.body;
       const filter = { email: email };
-      const options = { upsert: true };
       const updateDoc = {
         $set: {
           ...userInfo,
         },
       };
-      const result = await usersCollection.updateOne(
-        filter,
-        updateDoc,
-        options
-      );
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.put("/user-rating/:id", async (req, res) => {
+      const deliverymen_id = req.params.id;
+      const rating = req.body;
+      const filter = { _id: new ObjectId(deliverymen_id) };
+      const updateDoc = {
+        $set: {
+          ...rating,
+        },
+      };
+      const options = { upsert: true };
+      await usersCollection.updateOne(filter, updateDoc, options);
+    });
+
+    app.get("/review-rating", async (req, res) => {
+      const result = await usersCollection
+        .aggregate([
+          {
+            $group: { _id: "$_id", avgRating: { $avg: "$rating" } },
+          },
+        ])
+        .toArray();
+
       res.send(result);
     });
 
@@ -204,7 +248,7 @@ async function run() {
     });
 
     // GET A SINGLE BOOKING FOR UPDATE
-    app.get("/booking/:id", verifyToken, async (req, res) => {
+    app.get("/booking/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const result = await bookingsCollection.findOne(filter);
@@ -272,6 +316,14 @@ async function run() {
       res.send(result);
     });
 
+    // GET REVIEWS
+    app.get("/reviews/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { deliverymen_id: id };
+      const result = await reviewsCollection.find(filter).toArray();
+      res.send(result);
+    });
+
     // GET ALL MY DELIVERY LIST
     app.get(
       "/delivery-lists/:id",
@@ -300,7 +352,7 @@ async function run() {
       res.send({ clientSecret: paymentIntents.client_secret });
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
