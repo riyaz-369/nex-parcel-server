@@ -41,7 +41,6 @@ async function run() {
     // JWT APIS
     app.post("/jwt", async (req, res) => {
       const user = req.body;
-      console.log("client side user", user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
@@ -50,10 +49,7 @@ async function run() {
 
     // VERIFY TOKEN MIDDLEWARES
     const verifyToken = (req, res, next) => {
-      console.log("req headers", req.headers);
-
       const token = req.headers.authorization;
-      console.log("Inside verify the token", token);
 
       if (!token)
         return res.status(401).send({ message: "unauthorized access" });
@@ -136,7 +132,6 @@ async function run() {
     // COUNT USER NUMBER OF BOOKED PARCEL
     app.put("/users/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      // console.log(email);
       const options = { upsert: true };
       const updateDoc = {
         $inc: { number_of_parcel_booked: 1 },
@@ -152,7 +147,6 @@ async function run() {
     // MAKE A USER DELIVERYMEN OR ADMIN
     app.patch("/users/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      // console.log(email);
       const userInfo = req.body;
       const filter = { email: email };
       const updateDoc = {
